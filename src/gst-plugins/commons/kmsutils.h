@@ -56,6 +56,8 @@ KmsMediaType kms_utils_convert_element_pad_type (KmsElementPadType pad_type);
 void kms_utils_drop_until_keyframe (GstPad *pad, gboolean all_headers);
 void kms_utils_manage_gaps (GstPad *pad);
 void kms_utils_control_key_frames_request_duplicates (GstPad *pad);
+gboolean kms_utils_force_keyframe (void *pad);
+
 
 /* Pad blocked action */
 void kms_utils_execute_with_pad_blocked (GstPad * pad, gboolean drop, KmsPadCallback func, gpointer userData);

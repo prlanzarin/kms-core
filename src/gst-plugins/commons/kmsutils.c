@@ -414,6 +414,14 @@ kms_utils_drop_until_keyframe (GstPad * pad, gboolean all_headers)
   }
 }
 
+gboolean
+kms_utils_force_keyframe (void *pad)
+{
+  GST_DEBUG (pad, " UTILS FORCING KEYFRAME");
+  send_force_key_unit_event (pad, TRUE);
+  return TRUE;
+}
+
 static GstPadProbeReturn
 discont_detection_probe (GstPad * pad, GstPadProbeInfo * info, gpointer data)
 {
@@ -439,11 +447,12 @@ gap_detection_probe (GstPad * pad, GstPadProbeInfo * info, gpointer data)
   if (GST_EVENT_TYPE (event) == GST_EVENT_GAP) {
     GstClockTime timestamp;
     GstClockTime duration;
+
     gst_event_parse_gap (event, &timestamp, &duration);
     GST_WARNING_OBJECT (pad,
         "Stream gap detected, timestamp: %" GST_TIME_FORMAT ", "
         "duration: %" GST_TIME_FORMAT,
-        GST_TIME_ARGS(timestamp), GST_TIME_ARGS(duration));
+        GST_TIME_ARGS (timestamp), GST_TIME_ARGS (duration));
     send_force_key_unit_event (pad, FALSE);
     return GST_PAD_PROBE_DROP;
   }
