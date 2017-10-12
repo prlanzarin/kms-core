@@ -170,6 +170,7 @@ configure_encoder (GstElement * encoder, EncoderType type, gint target_bitrate,
     {
       /* *INDENT-OFF* */
       g_object_set (G_OBJECT (encoder),
+                    "gop-size", 60,
                     "rate-control", /* bitrate */ 1,
                     "bitrate", target_bitrate,
                     NULL);
