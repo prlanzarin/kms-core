@@ -302,6 +302,10 @@ send_force_key_unit_event (GstPad * pad, gboolean all_headers)
   GstEvent *event;
   GstCaps *caps = gst_pad_get_current_caps (pad);
 
+  if (!GST_IS_PAD (pad)) {
+    return;
+  }
+
   if (caps == NULL) {
     caps = gst_pad_get_allowed_caps (pad);
   }
