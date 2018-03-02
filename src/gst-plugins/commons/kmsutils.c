@@ -1436,6 +1436,16 @@ kms_utils_depayloader_pts_out_probe (GstPad * pad, GstPadProbeInfo * info,
   return GST_PAD_PROBE_OK;
 }
 
+gboolean
+kms_utils_force_keyframe (void *pad)
+{
+  if (GST_IS_PAD (pad)) {
+    send_force_key_unit_event (pad, TRUE);
+    return TRUE;
+  }
+  return FALSE;
+}
+
 void
 kms_utils_depayloader_monitor_pts_out (GstElement * depayloader)
 {
