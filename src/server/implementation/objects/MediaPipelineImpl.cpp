@@ -31,47 +31,59 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 
 namespace kurento
 {
+
+void
+MediaPipelineImpl::log_bus_issue(GstBin *bin, GstMessage *msg,
+    gboolean is_error)
+{
+  GstDebugLevel log_level = is_error ? GST_LEVEL_ERROR : GST_LEVEL_WARNING;
+
+  GError *err = NULL;
+  gchar *dbg_info = NULL;
+  gst_message_parse_error (msg, &err, &dbg_info);
+
+  gint err_code = (err ? err->code : -1);
+  gchar *err_msg = (err ? g_strdup (err->message) : g_strdup ("None"));
+
+  GST_CAT_LEVEL_LOG (GST_CAT_DEFAULT, log_level, NULL,
+      "Element '%s' bus code %d: %s", GST_OBJECT_NAME (msg->src), err_code,
+      err_msg);
+  GST_CAT_LEVEL_LOG (GST_CAT_DEFAULT, log_level, NULL,
+      "Debugging info: %s", ((dbg_info) ? dbg_info : "None"));
+
+  std::string errorMessage (err_msg);
+  if (dbg_info) {
+    errorMessage += " (" + std::string (dbg_info) + ")";
+  }
+
+  try {
+    gint code = err_code;
+    Error error (shared_from_this(), errorMessage, code,
+                 "UNEXPECTED_PIPELINE_ERROR");
+
+    signalError (error);
+  } catch (std::bad_weak_ptr &e) {
+  }
+
+  gchar *dot_name = g_strdup_printf ("%s_bus_%d", GST_DEFAULT_NAME, err_code);
+  GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS (bin, GST_DEBUG_GRAPH_SHOW_ALL, dot_name);
+  g_free(dot_name);
+
+  g_error_free (err);
+  g_free (dbg_info);
+  g_free (err_msg);
+}
+
 void
 MediaPipelineImpl::busMessage (GstMessage *message)
 {
-  switch (message->type) {
-  case GST_MESSAGE_ERROR: {
-    GError *err = NULL;
-    gchar *debug = NULL;
-
-    GST_ERROR ("Error on bus: %" GST_PTR_FORMAT, message);
-    gst_debug_bin_to_dot_file_with_ts (GST_BIN (pipeline),
-                                       GST_DEBUG_GRAPH_SHOW_ALL, "error");
-    gst_message_parse_error (message, &err, &debug);
-    std::string errorMessage;
-
-    if (err) {
-      errorMessage = std::string (err->message);
-    }
-
-    if (debug != NULL) {
-      errorMessage += " -> " + std::string (debug);
-    }
-
-    try {
-      gint code = 0;
-
-      if (err) {
-        code = err->code;
-      }
-
-      Error error (shared_from_this(), errorMessage , code,
-                   "UNEXPECTED_PIPELINE_ERROR");
-
-      signalError (error);
-    } catch (std::bad_weak_ptr &e) {
-    }
-
-    g_error_free (err);
-    g_free (debug);
+  switch (GST_MESSAGE_TYPE (message)) {
+  case GST_MESSAGE_ERROR:
+    log_bus_issue (GST_BIN (pipeline), message, TRUE);
     break;
-  }
-
+  case GST_MESSAGE_WARNING:
+    log_bus_issue (GST_BIN (pipeline), message, FALSE);
+    break;
   default:
     break;
   }
