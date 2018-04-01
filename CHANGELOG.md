@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [6.7.1] - 2018-03-21
+
+### Added
+- agnosticbin: Add new signal "media-transcoding".
+- API KMD: Server implementation for event "MediaTranscodingStateChange".
+- MediaTranscodingStateChange: Write documentation.
+
+### Fixed
+- MediaPipelineImpl: Fix NULL dereferencing.
+
+## [6.7.0] - 2018-01-24
+
+### Changed
+- CMake: Compile and link as Position Independent Code ('-fPIC').
+- Add more verbose logging in some areas that required it.
+- Debian: Align all version numbers of KMS-related modules.
+- Debian: Remove version numbers from package names.
+- Debian: Configure builds to use parallel compilation jobs.
+
+### Fixed
+- Reset stats after RTP source gets reconnected. The RTP sources assume a starting point of 0, so KMS must also adjust its own status after a reconnection.
+- Fix [#197](https://github.com/Kurento/bugtracker/issues/197) (Composite Hub making audio choppy) with [#9](https://github.com/Kurento/kms-core/pull/9) (fix composite: kmsenctreebin.c use max-size-time instead of max-size-buffers), by @ruddell (Jon Ruddell).
+
 ## [6.6.3] - 2017-08-10
 
 ### Changed
@@ -12,7 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [6.6.2] - 2017-07-24
 
 ### Added
-- REMB: Add "COMEDIA"/automatic port discovery. [TODO Link to documentation].
+- REMB: Add "COMEDIA"/automatic port discovery. [Documentation](http://doc-kurento.readthedocs.io/en/latest/features/nat_traversal.html#rtp-without-ice).
 - REMB: Enable for RTP connections. Previously, it would only work for WebRTC.
 
 ### Changed
@@ -137,6 +160,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - MediaElement: Fix error notification mechanisms. Errors where not raising in most cases.
 - Improvements in format negotiations between elements, this fixes problems in RecorderEndpoint and Composite.
 
+[6.7.1]: https://github.com/Kurento/kms-core/compare/6.7.0...6.7.1
+[6.7.0]: https://github.com/Kurento/kms-core/compare/6.6.3...6.7.0
 [6.6.3]: https://github.com/Kurento/kms-core/compare/6.6.2...6.6.3
 [6.6.2]: https://github.com/Kurento/kms-core/compare/6.6.1...6.6.2
 [6.6.1]: https://github.com/Kurento/kms-core/compare/6.6.0...6.6.1
