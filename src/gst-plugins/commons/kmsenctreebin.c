@@ -106,7 +106,7 @@ set_encoder_configuration (GstElement * encoder, GstStructure * codec_config,
       const gchar *name = g_param_spec_get_name (props[i]);
 
       if (gst_structure_has_field (config, name)) {
-        GValue final_value = G_VALUE_INIT;
+        GValue final_value = { 0, };
         gchar *st_value;
         const GValue *val;
 
@@ -158,10 +158,11 @@ configure_encoder (GstElement * encoder, EncoderType type, gint target_bitrate,
     {
       /* *INDENT-OFF* */
       g_object_set (G_OBJECT (encoder),
-                    "speed-preset", /* veryfast */ 3,
+                    "speed-preset", /* ultrafast */ 1,
                     "threads", (guint) 1,
                     "bitrate", target_bitrate / 1000,
                     "key-int-max", 60,
+                    "option-string", "slice-max-size=1024",
                     "tune", /* zero-latency */ 4,
                     NULL);
       /* *INDENT-ON* */
@@ -230,7 +231,7 @@ kms_enc_tree_bin_create_encoder_for_caps (KmsEncTreeBin * self,
   for (l = encoder_list; l != NULL; l = l->next) {
     encoder_factory = GST_ELEMENT_FACTORY (l->data);
 
-    if (g_str_has_prefix (GST_OBJECT_NAME (encoder_factory), "openh264")) {
+    if (g_str_has_prefix (GST_OBJECT_NAME (encoder_factory), "libx264")) {
       encoder_list = g_list_remove (encoder_list, l->data);
       encoder_list = g_list_prepend (encoder_list, encoder_factory);
       break;
