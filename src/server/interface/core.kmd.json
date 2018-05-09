@@ -777,6 +777,17 @@
           ]
         },
         {
+          "name": "setKeyframeInterval",
+          "doc": "Sets the keyframe generation interval in seconds. The generation is a gstreamer force_key_unit event, thus not guaranteed to be effective",
+          "params": [
+            {
+              "name": "interval",
+              "doc": "Seconds between each keyframe. If left to zero, won't force.",
+              "type": "int"
+            }
+          ]
+        },
+        {
           "name": "getStats",
           "doc": "Gets the statistics related to an endpoint. If no media type is specified, it returns statistics for all available types.",
           "params": [

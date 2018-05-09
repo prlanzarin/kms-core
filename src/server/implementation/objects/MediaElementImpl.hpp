@@ -137,6 +137,8 @@ public:
   void setAudioFormat (std::shared_ptr<AudioCaps> caps) override;
   void setVideoFormat (std::shared_ptr<VideoCaps> caps) override;
 
+  virtual void setKeyframeInterval (int interval);
+
   virtual void release () override;
 
   virtual std::string getGstreamerDot () override;
