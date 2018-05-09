@@ -1441,7 +1441,6 @@ kms_utils_force_keyframe (void *pad)
 {
   if (pad != NULL &&  GST_IS_PAD (pad)) {
     GST_INFO_OBJECT(pad, "Forcing a keyframe for media pad");
-    GST_DEBUG_OBJECT(pad, "Forcing a keyframe for media pad");
     send_force_key_unit_event (pad, TRUE);
     return TRUE;
   }

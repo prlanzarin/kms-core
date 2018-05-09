@@ -1104,7 +1104,6 @@ void MediaElementImpl::setKeyframeInterval (int interval)
   int intervalNew;
   g_object_set (G_OBJECT (element), KEYFRAME_INTERVAL, interval, NULL);
   g_object_get (element, KEYFRAME_INTERVAL, &intervalNew, NULL);
-  GST_INFO_OBJECT(element, "OLOCO BIXO O INTERVALO DE KEYFRAME EH %d", intervalNew);
 }
 
 std::string MediaElementImpl::getGstreamerDot (

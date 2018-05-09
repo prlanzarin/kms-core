@@ -1113,8 +1113,7 @@ kms_agnostic_bin_set_keyframe_interval (KmsAgnosticBin2 * self)
   bins = g_hash_table_get_values (self->priv->bins);
   for (l = bins; l != NULL; l = l->next) {
     if (KMS_IS_ENC_TREE_BIN (l->data)) {
-      kms_enc_tree_bin_set_bitrate_limits (KMS_ENC_TREE_BIN (l->data),
-          self->priv->min_bitrate, self->priv->max_bitrate);
+      // TODO unused at the moment
     }
   }
 }
