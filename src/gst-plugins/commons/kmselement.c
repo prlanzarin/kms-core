@@ -987,6 +987,9 @@ kms_element_connect_sink_target_full (KmsElement * self, GstPad * target,
 
   if (type == KMS_ELEMENT_PAD_TYPE_VIDEO) {
     kms_utils_drop_until_keyframe (pad, TRUE);
+    if (self->priv->keyframe_interval > 0) {
+      GST_INFO_OBJECT (pad, "Keyframe interval for pad is %d",
+          self->priv->keyframe_interval);
       g_timeout_add_seconds (self->priv->keyframe_interval,
           kms_utils_force_keyframe, pad);
     }
