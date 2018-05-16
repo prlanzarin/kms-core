@@ -45,6 +45,7 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 
 #define MIN_OUTPUT_BITRATE "min-output-bitrate"
 #define MAX_OUTPUT_BITRATE "max-output-bitrate"
+#define KEYFRAME_INTERVAL "keyframe-interval"
 
 #define TYPE_VIDEO "video_"
 #define TYPE_AUDIO "audio_"
@@ -1116,6 +1117,13 @@ void MediaElementImpl::setVideoFormat (std::shared_ptr<VideoCaps> caps)
 
   c = gst_caps_from_string (str_caps.c_str() );
   g_object_set (element, "video-caps", c, NULL);
+}
+
+void MediaElementImpl::setKeyframeInterval (int interval)
+{
+  int intervalNew;
+  g_object_set (G_OBJECT (element), KEYFRAME_INTERVAL, interval, NULL);
+  g_object_get (element, KEYFRAME_INTERVAL, &intervalNew, NULL);
 }
 
 std::string MediaElementImpl::getGstreamerDot (

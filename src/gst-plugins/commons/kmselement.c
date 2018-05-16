@@ -34,10 +34,12 @@
 #define MAX_BITRATE "max-bitrate"
 #define MIN_BITRATE "min-bitrate"
 #define CODEC_CONFIG "codec-config"
+#define KEYFRAME_INTERVAL "keyframe-interval"
 
 #define DEFAULT_MIN_BITRATE 0
 #define DEFAULT_MAX_BITRATE G_MAXINT
 #define MEDIA_FLOW_INTERNAL_TIME_MSEC 2000
+#define DEFAULT_KEYFRAME_INTERVAL 0
 
 GST_DEBUG_CATEGORY_STATIC (kms_element_debug_category);
 #define GST_CAT_DEFAULT kms_element_debug_category
@@ -156,6 +158,7 @@ struct _KmsElementPrivate
 
   gint min_bitrate;
   gint max_bitrate;
+  gint keyframe_interval;
 
   GstStructure *codec_config;
 
@@ -188,6 +191,7 @@ enum
   PROP_MAX_BITRATE,
   PROP_MEDIA_STATS,
   PROP_CODEC_CONFIG,
+  PROP_KEYFRAME_INTERVAL,
   PROP_LAST
 };
 
@@ -698,6 +702,9 @@ kms_element_set_video_output_properties (KmsElement * self,
 
   KMS_SET_OBJECT_PROPERTY_SAFELY (element, MIN_BITRATE,
       self->priv->min_bitrate);
+
+  KMS_SET_OBJECT_PROPERTY_SAFELY (element, KEYFRAME_INTERVAL,
+      self->priv->keyframe_interval);
 }
 
 static void
@@ -996,6 +1003,12 @@ kms_element_connect_sink_target_full (KmsElement * self, GstPad * target,
 
   if (type == KMS_ELEMENT_PAD_TYPE_VIDEO) {
     kms_utils_drop_until_keyframe (pad, TRUE);
+    if (self->priv->keyframe_interval > 0) {
+      GST_INFO_OBJECT (pad, "Keyframe interval for pad is %d",
+          self->priv->keyframe_interval);
+      g_timeout_add_seconds (self->priv->keyframe_interval,
+          kms_utils_force_keyframe, pad);
+    }
     kms_utils_manage_gaps (pad);
   }
 
@@ -1232,6 +1245,18 @@ set_codec_config (gchar * id, KmsOutputElementData * odata, KmsElement * self)
 }
 
 static void
+set_keyframe_interval (gchar * id, KmsOutputElementData * odata, KmsElement * self)
+{
+  if (odata->type == KMS_ELEMENT_PAD_TYPE_VIDEO) {
+    if (odata->element != NULL) {
+      KMS_SET_OBJECT_PROPERTY_SAFELY (odata->element, KEYFRAME_INTERVAL,
+          self->priv->keyframe_interval);
+      GST_INFO_OBJECT (odata->element, "Setting keyframe interval for element to %d", self->priv->keyframe_interval);
+    }
+  }
+}
+
+static void
 kms_element_set_property (GObject * object, guint property_id,
     const GValue * value, GParamSpec * pspec)
 {
@@ -1305,6 +1330,16 @@ kms_element_set_property (GObject * object, guint property_id,
       KMS_ELEMENT_UNLOCK (self);
       break;
     }
+    case PROP_KEYFRAME_INTERVAL:{
+      gint v = g_value_get_int (value);
+
+      KMS_ELEMENT_LOCK (self);
+      self->priv->keyframe_interval = v;
+      g_hash_table_foreach (self->priv->output_elements,
+          (GHFunc) set_keyframe_interval, self);
+      KMS_ELEMENT_UNLOCK (self);
+      break;
+    }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
@@ -1347,6 +1382,11 @@ kms_element_get_property (GObject * object, guint property_id,
     case PROP_CODEC_CONFIG:
       KMS_ELEMENT_LOCK (self);
       g_value_set_boxed (value, self->priv->codec_config);
+      KMS_ELEMENT_UNLOCK (self);
+      break;
+    case PROP_KEYFRAME_INTERVAL:
+      KMS_ELEMENT_LOCK (self);
+      g_value_set_int (value, self->priv->keyframe_interval);
       KMS_ELEMENT_UNLOCK (self);
       break;
     default:
@@ -1873,6 +1913,12 @@ kms_element_class_init (KmsElementClass * klass)
       g_param_spec_boxed ("codec-config", "codec config",
           "Codec configuration", GST_TYPE_STRUCTURE, G_PARAM_READWRITE));
 
+  g_object_class_install_property (gobject_class, PROP_KEYFRAME_INTERVAL,
+      g_param_spec_int ("keyframe-interval", "Keyframe interval",
+          "Sets the keyframe intervalfor a given element", 0, G_MAXINT,
+          DEFAULT_KEYFRAME_INTERVAL, G_PARAM_READWRITE));
+
+
   klass->sink_query = GST_DEBUG_FUNCPTR (kms_element_sink_query_default);
   klass->collect_media_stats =
       GST_DEBUG_FUNCPTR (kms_element_collect_media_stats_impl);
@@ -1961,6 +2007,7 @@ kms_element_init (KmsElement * element)
 
   element->priv->min_bitrate = DEFAULT_MIN_BITRATE;
   element->priv->max_bitrate = DEFAULT_MAX_BITRATE;
+  element->priv->keyframe_interval = DEFAULT_KEYFRAME_INTERVAL;
 
   element->priv->pendingpads = g_hash_table_new_full (g_str_hash, g_str_equal,
       g_free, (GDestroyNotify) destroy_pendingpads);
