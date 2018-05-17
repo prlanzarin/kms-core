@@ -68,6 +68,7 @@ G_DEFINE_TYPE (KmsAgnosticBin2, kms_agnostic_bin2, GST_TYPE_BIN);
 #define TARGET_BITRATE_DEFAULT 300000
 #define MIN_BITRATE_DEFAULT 0
 #define MAX_BITRATE_DEFAULT G_MAXINT
+#define KEYFRAME_INTERVAL_DEFAULT 0
 #define LEAKY_TIME 600000000    /*600 ms */
 
 enum
@@ -97,9 +98,11 @@ struct _KmsAgnosticBin2Private
 
   gint max_bitrate;
   gint min_bitrate;
+  gint keyframe_interval;
 
   GstStructure *codec_config;
   gboolean bitrate_unlimited;
+  gboolean no_keyframe_interval;
 };
 
 enum
@@ -108,6 +111,7 @@ enum
   PROP_MIN_BITRATE,
   PROP_MAX_BITRATE,
   PROP_CODEC_CONFIG,
+  PROP_KEYFRAME_INTERVAL,
   N_PROPERTIES
 };
 
@@ -761,7 +765,6 @@ kms_agnostic_bin2_link_pad (KmsAgnosticBin2 * self, GstPad * pad, GstPad * peer)
       kms_utils_drop_until_keyframe (pad, TRUE);
     }
     kms_agnostic_bin2_link_to_tee (self, pad, tee, caps);
-    g_timeout_add_seconds (2, kms_utils_force_keyframe, pad);
   }
 
   gst_caps_unref (caps);
@@ -1128,6 +1131,19 @@ kms_agnostic_bin_set_encoders_bitrate (KmsAgnosticBin2 * self)
   }
 }
 
+static void
+kms_agnostic_bin_set_keyframe_interval (KmsAgnosticBin2 * self)
+{
+  GList *bins, *l;
+
+  bins = g_hash_table_get_values (self->priv->bins);
+  for (l = bins; l != NULL; l = l->next) {
+    if (KMS_IS_ENC_TREE_BIN (l->data)) {
+      // TODO unused at the moment
+    }
+  }
+}
+
 void
 kms_agnostic_bin2_set_property (GObject * object, guint property_id,
     const GValue * value, GParamSpec * pspec)
@@ -1172,6 +1188,21 @@ kms_agnostic_bin2_set_property (GObject * object, guint property_id,
       self->priv->max_bitrate = v;
       GST_DEBUG ("max_bitrate configured %d", self->priv->max_bitrate);
       kms_agnostic_bin_set_encoders_bitrate (self);
+      KMS_AGNOSTIC_BIN2_UNLOCK (self);
+      break;
+    }
+    case PROP_KEYFRAME_INTERVAL:{
+      gint v;
+
+      v = g_value_get_int (value);
+      KMS_AGNOSTIC_BIN2_LOCK (self);
+      if (v == 0) {
+        self->priv->no_keyframe_interval = TRUE;
+        v = KEYFRAME_INTERVAL_DEFAULT;
+      }
+      self->priv->keyframe_interval = v;
+      GST_DEBUG ("keyframe_interval configured %d", self->priv->keyframe_interval);
+      kms_agnostic_bin_set_keyframe_interval (self);
       KMS_AGNOSTIC_BIN2_UNLOCK (self);
       break;
     }
