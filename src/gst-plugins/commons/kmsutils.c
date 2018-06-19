@@ -1439,11 +1439,14 @@ kms_utils_depayloader_pts_out_probe (GstPad * pad, GstPadProbeInfo * info,
 gboolean
 kms_utils_force_keyframe (void *pad)
 {
-  if (GST_IS_PAD (pad)) {
+  if (pad != NULL &&  GST_IS_PAD (pad)) {
+    GST_INFO_OBJECT(pad, "Forcing a keyframe for media pad");
     send_force_key_unit_event (pad, TRUE);
     return TRUE;
   }
-  return FALSE;
+  else {
+    return FALSE;
+  }
 }
 
 void
