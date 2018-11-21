@@ -1,6 +1,6 @@
 {
   "name": "core",
-  "version": "6.7.1",
+  "version": "6.8.1",
   "code": {
     "kmd": {
       "java": {
@@ -16,7 +16,7 @@
       },
       "js": {
         "nodeName": "kurento-client-core",
-        "npmDescription": "Base classes for kurento media server api",
+        "npmDescription": "JavaScript Client API for Kurento Media Server",
         "npmGit": "Kurento/kurento-client-core-js"
       }
     },

@@ -21,7 +21,7 @@
 #include <KurentoException.hpp>
 #include <MediaState.hpp>
 #include <ConnectionState.hpp>
-#include <time.h>
+#include <ctime>
 #include <SignalHandler.hpp>
 #include <MediaType.hpp>
 
@@ -234,15 +234,15 @@ BaseRtpEndpointImpl::getMediaState ()
 {
   current_media_state = std::make_shared <MediaState> (MediaState::DISCONNECTED);
 
-  for (auto it = mediaFlowInStates.begin(); it != mediaFlowInStates.end(); ++it) {
-    if (it->second->getValue() == MediaFlowState::FLOWING) {
+  for (auto &mediaFlowInState : mediaFlowInStates) {
+    if (mediaFlowInState.second->getValue() == MediaFlowState::FLOWING) {
       current_media_state = std::make_shared <MediaState> (MediaState::CONNECTED);
       goto end;
     }
   }
 
-  for (auto it = mediaFlowOutStates.begin(); it != mediaFlowOutStates.end(); ++it) {
-    if (it->second->getValue() == MediaFlowState::FLOWING) {
+  for (auto &mediaFlowOutState : mediaFlowOutStates) {
+    if (mediaFlowOutState.second->getValue() == MediaFlowState::FLOWING) {
       current_media_state = std::make_shared <MediaState> (MediaState::CONNECTED);
       goto end;
     }
@@ -268,7 +268,7 @@ BaseRtpEndpointImpl::getRembParams ()
 
   g_object_get (G_OBJECT (element), REMB_PARAMS, &params, NULL);
 
-  if (params == NULL)  {
+  if (params == nullptr) {
     return ret;
   }
 
@@ -583,11 +583,11 @@ setDeprecatedProperties (std::shared_ptr<EndpointStats> eStats)
   std::vector<std::shared_ptr<MediaLatencyStat>> inStats =
         eStats->getE2ELatency();
 
-  for (unsigned i = 0; i < inStats.size(); i++) {
-    if (inStats[i]->getName() == "sink_audio_default") {
-      eStats->setAudioE2ELatency (inStats[i]->getAvg() );
-    } else if (inStats[i]->getName() == "sink_video_default") {
-      eStats->setVideoE2ELatency (inStats[i]->getAvg() );
+  for (auto &inStat : inStats) {
+    if (inStat->getName() == "sink_audio_default") {
+      eStats->setAudioE2ELatency(inStat->getAvg());
+    } else if (inStat->getName() == "sink_video_default") {
+      eStats->setVideoE2ELatency(inStat->getAvg());
     }
   }
 }
@@ -629,13 +629,13 @@ BaseRtpEndpointImpl::fillStatsReport (std::map
 
   e_stats = kms_utils_get_structure_by_name (stats, KMS_MEDIA_ELEMENT_FIELD);
 
-  if (e_stats != NULL) {
+  if (e_stats != nullptr) {
     collectEndpointStats (report, getId (), e_stats, timestamp);
   }
 
   rtc_stats = kms_utils_get_structure_by_name (stats, KMS_RTC_STATISTICS_FIELD);
 
-  if (rtc_stats != NULL) {
+  if (rtc_stats != nullptr) {
     collectRTCStats (report, timestamp, rtc_stats );
   }
 
