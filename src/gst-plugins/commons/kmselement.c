@@ -1009,7 +1009,7 @@ kms_element_connect_sink_target_full (KmsElement * self, GstPad * target,
       g_timeout_add_seconds (self->priv->keyframe_interval,
           kms_utils_force_keyframe, pad);
     }
-    kms_utils_manage_gaps (pad);
+    kms_utils_pad_monitor_gaps (pad);
   }
 
   gst_pad_set_query_function (pad, kms_element_pad_query);
