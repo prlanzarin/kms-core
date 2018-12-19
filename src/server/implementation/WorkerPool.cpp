@@ -159,6 +159,8 @@ WorkerPool::checkWorkers ()
     if (!terminated) {
       workers.emplace_back(std::bind(&workerThreadLoop, io_service));
     }
+
+    lock.unlock();
   });
 }
 

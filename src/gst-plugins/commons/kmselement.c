@@ -159,6 +159,7 @@ struct _KmsElementPrivate
   gint min_bitrate;
   gint max_bitrate;
   gint keyframe_interval;
+  gint keyframe_interval_timeout_tag;
 
   GstStructure *codec_config;
 
@@ -1006,7 +1007,8 @@ kms_element_connect_sink_target_full (KmsElement * self, GstPad * target,
     if (self->priv->keyframe_interval > 0) {
       GST_INFO_OBJECT (pad, "Keyframe interval for pad is %d",
           self->priv->keyframe_interval);
-      g_timeout_add_seconds (self->priv->keyframe_interval,
+      self->priv->keyframe_interval_timeout_tag = g_timeout_add_seconds (
+          self->priv->keyframe_interval,
           kms_utils_force_keyframe, pad);
     }
     kms_utils_pad_monitor_gaps (pad);
@@ -1415,6 +1417,7 @@ kms_element_finalize (GObject * object)
   g_hash_table_unref (element->priv->pendingpads);
   g_hash_table_unref (element->priv->output_elements);
   g_hash_table_unref (element->priv->stats.avg_iss);
+  g_source_remove (element->priv->keyframe_interval_timeout_tag);
 
   g_rec_mutex_clear (&element->mutex);
 
