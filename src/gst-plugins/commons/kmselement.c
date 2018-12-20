@@ -35,6 +35,7 @@
 #define MIN_BITRATE "min-bitrate"
 #define CODEC_CONFIG "codec-config"
 #define KEYFRAME_INTERVAL "keyframe-interval"
+#define DEFAULT_KEYFRAME_TIMEOUT_TAG 0
 
 #define DEFAULT_MIN_BITRATE 0
 #define DEFAULT_MAX_BITRATE G_MAXINT
@@ -1417,7 +1418,9 @@ kms_element_finalize (GObject * object)
   g_hash_table_unref (element->priv->pendingpads);
   g_hash_table_unref (element->priv->output_elements);
   g_hash_table_unref (element->priv->stats.avg_iss);
-  g_source_remove (element->priv->keyframe_interval_timeout_tag);
+  if (element->priv->keyframe_interval_timeout_tag > 0) {
+    g_source_remove (element->priv->keyframe_interval_timeout_tag);
+  }
 
   g_rec_mutex_clear (&element->mutex);
 
@@ -2011,6 +2014,7 @@ kms_element_init (KmsElement * element)
   element->priv->min_bitrate = DEFAULT_MIN_BITRATE;
   element->priv->max_bitrate = DEFAULT_MAX_BITRATE;
   element->priv->keyframe_interval = DEFAULT_KEYFRAME_INTERVAL;
+  element->priv->keyframe_interval_timeout_tag = DEFAULT_KEYFRAME_TIMEOUT_TAG;
 
   element->priv->pendingpads = g_hash_table_new_full (g_str_hash, g_str_equal,
       g_free, (GDestroyNotify) destroy_pendingpads);
