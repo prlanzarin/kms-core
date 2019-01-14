@@ -1013,21 +1013,21 @@ void MediaElementImpl::disconnect (std::shared_ptr<MediaElement> sink,
 
     connectionData = sinkImpl->sources.at (mediaType).at (sinkMediaDescription);
 
-    if (connectionData->toInterface()->getSourceDescription() ==
-        sourceMediaDescription) {
-      sinkImpl->sources.at (mediaType).erase (sinkMediaDescription);
-    }
-
     for (auto conn : sinks.at (mediaType).at (sourceMediaDescription) ) {
       if (conn->toInterface()->getSink() == sink &&
           conn->toInterface()->getSinkDescription() == sinkMediaDescription) {
+        if (connectionData->toInterface()->getSourceDescription() ==
+            sourceMediaDescription) {
+          sinkImpl->sources.at (mediaType).erase (sinkMediaDescription);
+        }
+
         sinks.at (mediaType).at (sourceMediaDescription).erase (conn);
+
+        g_signal_emit_by_name (getGstreamerElement (), "release-requested-pad",
+            connectionData->getSourcePadName (), &ret, NULL);
         break;
       }
     }
-
-    g_signal_emit_by_name (getGstreamerElement (), "release-requested-pad",
-                           connectionData->getSourcePadName (), &ret, NULL);
   } catch (std::out_of_range) {
 
   }
