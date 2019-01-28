@@ -121,7 +121,6 @@ kms_sdp_mid_ext_add_answer_attributes (KmsISdpMediaExtension * ext,
 
   mid = gst_sdp_media_get_attribute_val (answer, MID_ATTR);
 
-  kms_sdp_rtcp_ext_add_answer_attributes(offer, answer);
 
   if (mid != NULL) {
     /* do not add more mid attributes */
@@ -133,6 +132,7 @@ kms_sdp_mid_ext_add_answer_attributes (KmsISdpMediaExtension * ext,
 
   if (mid == NULL) {
     GST_WARNING_OBJECT (ext, "Remote agent does not support groups");
+    kms_sdp_rtcp_ext_add_answer_attributes(offer, answer);
     return TRUE;
   }
 
