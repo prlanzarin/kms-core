@@ -23,6 +23,7 @@
 #define SDP_MEDIA_RTCP_FB_GOOG_REMB "goog-remb"
 #define SDP_MEDIA_RTCP_FB_PLI "pli"
 #define SDP_MEDIA_RTCP_FB_FIR "fir"
+#define SDP_MEDIA_RTCP_FB_FIR_TMMBR "ccm fir tmmbr"
 
 /* RTP Header Extensions */
 #define RTP_HDR_EXT_ABS_SEND_TIME_URI "http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time"

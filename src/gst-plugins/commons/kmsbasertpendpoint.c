@@ -78,6 +78,8 @@ G_DEFINE_TYPE_WITH_CODE (KmsBaseRtpEndpoint, kms_base_rtp_endpoint,
 #define JB_READY_VIDEO_LATENCY 500
 #define RTCP_FB_CCM_FIR   SDP_MEDIA_RTCP_FB_CCM " " SDP_MEDIA_RTCP_FB_FIR
 #define RTCP_FB_NACK_PLI  SDP_MEDIA_RTCP_FB_NACK " " SDP_MEDIA_RTCP_FB_PLI
+#define RTCP_FB_PLI SDP_MEDIA_RTCP_FB_PLI
+#define RTCP_FB_FIR_TMMBR SDP_MEDIA_RTCP_FB_FIR_TMMBR
 
 #define DEFAULT_MIN_PORT 1024
 #define DEFAULT_MAX_PORT G_MAXUINT16
@@ -1581,7 +1583,7 @@ static void
 complete_caps_with_fb (GstCaps * caps, const GstSDPMedia * media,
     const gchar * payload)
 {
-  gboolean fir, pli;
+  gboolean fir, pli, fir_tmmbr;
   guint a;
 
   fir = pli = FALSE;
@@ -1599,15 +1601,26 @@ complete_caps_with_fb (GstCaps * caps, const GstSDPMedia * media,
       continue;
     }
 
+    if (sdp_utils_rtcp_fb_attr_check_type (attr, payload, RTCP_FB_FIR_TMMBR)) {
+      fir_tmmbr = TRUE;
+      continue;
+    }
+
     if (sdp_utils_rtcp_fb_attr_check_type (attr, payload, RTCP_FB_NACK_PLI)) {
+      pli = TRUE;
+      continue;
+    }
+
+    if (sdp_utils_rtcp_fb_attr_check_type (attr, payload, RTCP_FB_PLI)) {
       pli = TRUE;
       continue;
     }
   }
 
-  if (fir) {
+  if (fir || fir_tmmbr) {
     gst_caps_set_simple (caps, "rtcp-fb-ccm-fir", G_TYPE_BOOLEAN, fir, NULL);
   }
+
   if (pli) {
     gst_caps_set_simple (caps, "rtcp-fb-nack-pli", G_TYPE_BOOLEAN, pli, NULL);
   }
