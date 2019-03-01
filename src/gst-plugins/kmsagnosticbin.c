@@ -499,14 +499,41 @@ check_bin (KmsTreeBin * tree_bin, const GstCaps * caps)
   if (current_caps != NULL) {
     //TODO: Remove this when problem in negotiation with features will be
     //resolved
+    GstCaps *temp_raw_caps = gst_caps_copy (caps);
     GstCaps *caps_without_features = gst_caps_make_writable (current_caps);
 
     gst_caps_set_features (caps_without_features, 0,
         gst_caps_features_new_empty ());
-    if (gst_caps_can_intersect (caps, caps_without_features)) {
+    gst_caps_set_features (temp_raw_caps, 0,
+        gst_caps_features_new_empty ());
+
+    // Check if caps are already fixed before trying to intersect them. If not,
+    // fixate them
+    if (!gst_caps_is_fixed (temp_raw_caps)) {
+      temp_raw_caps = gst_caps_fixate (temp_raw_caps);
+    }
+
+    if (!gst_caps_is_fixed (current_caps)) {
+      caps = gst_caps_fixate (current_caps);
+    }
+
+    // Remove some trailing caps fields to avoid triggering the creation of a
+    // new treebin without a proper reason
+    GstStructure *st1, *st2;
+
+    st1 = gst_caps_get_structure (caps_without_features, 0);
+    st2 = gst_caps_get_structure (temp_raw_caps, 0);
+
+    gst_structure_remove_fields (st1, "width", "height", "framerate",
+        "streamheader", "codec_data", NULL);
+    gst_structure_remove_fields (st2, "width", "height", "framerate",
+        "streamheader", "codec_data", NULL);
+
+    if (gst_caps_can_intersect (temp_raw_caps, caps_without_features)) {
       ret = TRUE;
     }
     gst_caps_unref (caps_without_features);
+    gst_caps_unref (temp_raw_caps);
   }
 
   g_object_unref (tee_sink);
@@ -837,7 +864,6 @@ kms_agnostic_bin2_process_pad (KmsAgnosticBin2 * self, GstPad * pad)
           g_object_unref (peer);
           return FALSE;
         }
-
         remove_target_pad (pad);
       }
 
@@ -857,8 +883,10 @@ add_linked_pads (GstPad * pad, KmsAgnosticBin2 * self)
     return;
   }
 
+  KMS_AGNOSTIC_BIN2_LOCK (self);
   remove_target_pad (pad);
   kms_agnostic_bin2_process_pad (self, pad);
+  KMS_AGNOSTIC_BIN2_UNLOCK (self);
 }
 
 static GstPadProbeReturn
