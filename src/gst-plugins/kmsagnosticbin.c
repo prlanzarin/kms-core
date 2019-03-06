@@ -514,7 +514,7 @@ check_bin (KmsTreeBin * tree_bin, const GstCaps * caps)
     }
 
     if (!gst_caps_is_fixed (current_caps)) {
-      caps = gst_caps_fixate (current_caps);
+      current_caps = gst_caps_fixate (current_caps);
     }
 
     // Remove some trailing caps fields to avoid triggering the creation of a
