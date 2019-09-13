@@ -137,7 +137,7 @@ public:
   {
     try {
       return std::dynamic_pointer_cast <MediaElementImpl> (source.lock() );
-    } catch (std::bad_cast) {
+    } catch (std::bad_cast &) {
       GST_WARNING ("Bad cast for source element");
       return std::shared_ptr<MediaElementImpl> ();
     }
@@ -147,7 +147,7 @@ public:
   {
     try {
       return std::dynamic_pointer_cast <MediaElementImpl> (sink.lock() );
-    } catch (std::bad_cast) {
+    } catch (std::bad_cast &) {
       GST_WARNING ("Bad cast for source element");
       return std::shared_ptr<MediaElementImpl> ();
     }
@@ -250,9 +250,10 @@ processBusMessage (GstBus *bus, GstMessage *msg, MediaElementImpl *self)
   GstElement *parent = self->element;
   gint err_code = 0;
   gchar *err_msg = NULL;
+  std::string errorMessage;
 
   if (!gst_object_has_as_ancestor (msg->src, GST_OBJECT (parent))) {
-    return;
+    goto finish;
   }
 
   if (err != NULL) {
@@ -268,7 +269,7 @@ processBusMessage (GstBus *bus, GstMessage *msg, MediaElementImpl *self)
   GST_CAT_LEVEL_LOG (GST_CAT_DEFAULT, log_level, NULL,
       "Debugging info: %s", (dbg_info ? dbg_info : "(None)"));
 
-  std::string errorMessage (err_msg);
+  errorMessage.assign (err_msg);
   if (dbg_info) {
     errorMessage += " (" + std::string (dbg_info) + ")";
   }
@@ -282,6 +283,7 @@ processBusMessage (GstBus *bus, GstMessage *msg, MediaElementImpl *self)
   } catch (std::bad_weak_ptr &e) {
   }
 
+finish:
   g_error_free (err);
   g_free (dbg_info);
 
@@ -365,7 +367,7 @@ _media_element_pad_added (GstElement *elem, GstPad *pad, gpointer data)
             self->performConnection (it);
           }
         }
-      } catch (std::out_of_range) {
+      } catch (std::out_of_range &) {
 
       }
     } else {
@@ -412,7 +414,7 @@ _media_element_pad_added (GstElement *elem, GstPad *pad, gpointer data)
             source->performConnection (sourceData);
           }
         }
-      } catch (std::out_of_range) {
+      } catch (std::out_of_range &) {
 
       }
     }
@@ -728,7 +730,7 @@ std::vector<std::shared_ptr<ElementConnectionData>>
     for (auto it2 : it.second) {
       try {
         ret.push_back (it2.second->toInterface() );
-      } catch (KurentoException) {
+      } catch (KurentoException &) {
       }
     }
   }
@@ -747,11 +749,11 @@ std::vector<std::shared_ptr<ElementConnectionData>>
     for (auto it : sources.at (mediaType) ) {
       try {
         ret.push_back (it.second->toInterface() );
-      } catch (KurentoException) {
+      } catch (KurentoException &) {
 
       }
     }
-  } catch (std::out_of_range) {
+  } catch (std::out_of_range &) {
 
   }
 
@@ -767,9 +769,9 @@ std::vector<std::shared_ptr<ElementConnectionData>>
 
   try {
     ret.push_back (sources.at (mediaType).at (description)->toInterface() );
-  } catch (KurentoException) {
+  } catch (KurentoException &) {
 
-  } catch (std::out_of_range) {
+  } catch (std::out_of_range &) {
 
   }
 
@@ -787,7 +789,7 @@ std::vector<std::shared_ptr<ElementConnectionData>>
       for (auto it3 : it2.second) {
         try {
           ret.push_back (it3->toInterface() );
-        } catch (KurentoException) {
+        } catch (KurentoException &) {
 
         }
       }
@@ -809,12 +811,12 @@ std::vector<std::shared_ptr<ElementConnectionData>>
       for (auto it3 : it.second) {
         try {
           ret.push_back (it3->toInterface() );
-        } catch (KurentoException) {
+        } catch (KurentoException &) {
 
         }
       }
     }
-  } catch (std::out_of_range) {
+  } catch (std::out_of_range &) {
 
   }
 
@@ -832,11 +834,11 @@ std::vector<std::shared_ptr<ElementConnectionData>>
     for (auto it : sinks.at (mediaType).at (description) ) {
       try {
         ret.push_back (it->toInterface() );
-      } catch (KurentoException) {
+      } catch (KurentoException &) {
 
       }
     }
-  } catch (std::out_of_range) {
+  } catch (std::out_of_range &) {
 
   }
 
@@ -1049,7 +1051,7 @@ void MediaElementImpl::disconnect (std::shared_ptr<MediaElement> sink,
         break;
       }
     }
-  } catch (std::out_of_range) {
+  } catch (std::out_of_range &) {
 
   }
 
