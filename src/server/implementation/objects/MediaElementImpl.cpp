@@ -480,6 +480,8 @@ MediaElementImpl::mediaFlowOutStateChange (gboolean isFlowing, gchar *padName,
     MediaFlowOutStateChange event (shared_from_this(),
                                    MediaFlowOutStateChange::getName (),
                                    state, padName, padTypeToMediaType (type));
+
+    std::unique_lock<std::recursive_mutex> sigcLock (sigcMutex);
     signalMediaFlowOutStateChange (event);
   } catch (std::bad_weak_ptr &e) {
   }
@@ -512,6 +514,8 @@ MediaElementImpl::mediaFlowInStateChange (gboolean isFlowing, gchar *padName,
     MediaFlowInStateChange event (shared_from_this(),
                                   MediaFlowInStateChange::getName (),
                                   state, padName, padTypeToMediaType (type));
+
+    std::unique_lock<std::recursive_mutex> sigcLock (sigcMutex);
     signalMediaFlowInStateChange (event);
   } catch (std::bad_weak_ptr &e) {
   }
@@ -546,6 +550,8 @@ MediaElementImpl::onMediaTranscodingStateChange (gboolean isTranscoding,
     MediaTranscodingStateChange event (shared_from_this(),
                                        MediaTranscodingStateChange::getName (),
                                        state, binName, padTypeToMediaType (type));
+
+    std::unique_lock<std::recursive_mutex> sigcLock (sigcMutex);
     signalMediaTranscodingStateChange (event);
   } catch (std::bad_weak_ptr &e) {
     GST_WARNING_OBJECT (element, "Cannot emit event: MediaTranscodingStateChange");
@@ -609,7 +615,7 @@ MediaElementImpl::MediaElementImpl (const boost::property_tree::ptree &config,
   pipe->addElement (element);
 
   //read default configuration for output bitrate
-  int bitrate;
+  int bitrate = 0;
   if (getConfigValue<int, MediaElement> (&bitrate, "outputBitrate")) {
     GST_DEBUG ("Output bitrate configured to %d bps", bitrate);
     g_object_set (G_OBJECT (element), MIN_OUTPUT_BITRATE, bitrate,
@@ -663,7 +669,7 @@ MediaElementImpl::release ()
 
 void MediaElementImpl::disconnectAll ()
 {
-  while (!getSinkConnections().empty() ) {
+  while (!MediaElementImpl::getSinkConnections().empty() ) {
     std::unique_lock<std::recursive_timed_mutex> sinkLock (sinksMutex,
         std::defer_lock);
 
@@ -672,16 +678,23 @@ void MediaElementImpl::disconnectAll ()
       continue;
     }
 
-    for (std::shared_ptr<ElementConnectionData> connData : getSinkConnections() ) {
+    for (std::shared_ptr<ElementConnectionData> connData :
+         MediaElementImpl::getSinkConnections() ) {
       auto sinkImpl = std::dynamic_pointer_cast <MediaElementImpl>
                       (connData->getSink () );
       std::unique_lock<std::recursive_timed_mutex> sinkLock (sinkImpl->sourcesMutex,
           std::defer_lock);
 
       if (sinkLock.try_lock_for (millisRand ())) {
-        disconnect (connData->getSink (), connData->getType (),
-                    connData->getSourceDescription (),
-                    connData->getSinkDescription () );
+        // WARNING: This called the virtual method 'disconnect()', but:
+        // 1. Virtual methods shouldn't be called from constructors or destructors.
+        // 2. There is no other override of 'disconnect()'.
+        // So to solve (1), we're calling here the same-class implementation of
+        // the method. If new overrides are added in the future, then this
+        // will need to be reviewed.
+        MediaElementImpl::disconnect (connData->getSink (),
+            connData->getType (), connData->getSourceDescription (),
+            connData->getSinkDescription () );
       }
       else {
         GST_DEBUG_OBJECT (sinkImpl->getGstreamerElement(),
@@ -690,7 +703,7 @@ void MediaElementImpl::disconnectAll ()
     }
   }
 
-  while (!getSourceConnections().empty() ) {
+  while (!MediaElementImpl::getSourceConnections().empty() ) {
     std::unique_lock<std::recursive_timed_mutex> sourceLock (sourcesMutex,
         std::defer_lock);
 
@@ -700,7 +713,7 @@ void MediaElementImpl::disconnectAll ()
     }
 
     for (std::shared_ptr<ElementConnectionData> connData :
-         getSourceConnections() ) {
+         MediaElementImpl::getSourceConnections() ) {
       auto sourceImpl = std::dynamic_pointer_cast <MediaElementImpl>
                         (connData->getSource () );
       std::unique_lock<std::recursive_timed_mutex> sourceLock (sourceImpl->sinksMutex,
@@ -942,6 +955,8 @@ void MediaElementImpl::connect (std::shared_ptr<MediaElement> sink,
                                      ElementConnected::getName (),
                                      sink, mediaType, sourceMediaDescription,
                                      sinkMediaDescription);
+
+  std::unique_lock<std::recursive_mutex> sigcLock (sigcMutex);
   signalElementConnected (elementConnected);
 }
 
@@ -1062,6 +1077,8 @@ void MediaElementImpl::disconnect (std::shared_ptr<MediaElement> sink,
       ElementDisconnected::getName (),
       sink, mediaType, sourceMediaDescription,
       sinkMediaDescription);
+
+  std::unique_lock<std::recursive_mutex> sigcLock (sigcMutex);
   signalElementDisconnected (elementDisconnected);
 }
 
