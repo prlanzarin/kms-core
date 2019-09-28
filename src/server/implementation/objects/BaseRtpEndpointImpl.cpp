@@ -94,12 +94,12 @@ BaseRtpEndpointImpl::BaseRtpEndpointImpl (const boost::property_tree::ptree
                        (ConnectionState::DISCONNECTED);
   connStateChangedHandlerId = 0;
 
-  guint minPort = 0;
+  guint minPort;
   if (getConfigValue<guint, BaseRtpEndpoint> (&minPort, PARAM_MIN_PORT)) {
     g_object_set (getGstreamerElement (), PROP_MIN_PORT, minPort, NULL);
   }
 
-  guint maxPort = 0;
+  guint maxPort;
   if (getConfigValue <guint, BaseRtpEndpoint> (&maxPort, PARAM_MAX_PORT)) {
     g_object_set (getGstreamerElement (), PROP_MAX_PORT, maxPort, NULL);
   }
@@ -143,7 +143,6 @@ BaseRtpEndpointImpl::updateMediaState (guint new_state)
     MediaStateChanged event (shared_from_this(),
                              MediaStateChanged::getName (), old_state, current_media_state);
 
-    std::unique_lock<std::recursive_mutex> sigcLock (sigcMutex);
     this->signalMediaStateChanged (event);
   }
 }
@@ -175,8 +174,7 @@ BaseRtpEndpointImpl::updateConnectionState (gchar *sessId, guint new_state)
     ConnectionStateChanged event (shared_from_this(),
                                   ConnectionStateChanged::getName (), old_state, current_conn_state);
 
-    std::unique_lock<std::recursive_mutex> sigcLock (sigcMutex);
-    signalConnectionStateChanged (event);
+    this->signalConnectionStateChanged (event);
   }
 }
 

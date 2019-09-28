@@ -63,8 +63,7 @@ MediaObjectImpl::createId()
   if (parent) {
     std::shared_ptr<MediaObjectImpl> parent;
 
-    parent = std::dynamic_pointer_cast<MediaObjectImpl> (
-        MediaObjectImpl::getParent() );
+    parent = std::dynamic_pointer_cast<MediaObjectImpl> (getParent() );
     return parent->getId() + "/" +
            uuid;
   } else {
