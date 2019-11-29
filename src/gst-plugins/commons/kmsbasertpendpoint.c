@@ -1710,8 +1710,9 @@ kms_base_rtp_endpoint_get_caps_for_pt (KmsBaseRtpEndpoint * self, guint pt,
     guint session)
 {
   guint i, len;
-  gchar *str_pt;
-  GstCaps *local_caps, *caps;
+  gchar *str_pt = NULL;
+  GstCaps *local_caps = NULL;
+  GstCaps *caps = NULL;
 
   KmsBaseSdpEndpoint *base_endpoint = KMS_BASE_SDP_ENDPOINT (self);
   const GstSDPMessage *sdp =
@@ -1821,8 +1822,12 @@ kms_base_rtp_endpoint_get_caps_for_pt (KmsBaseRtpEndpoint * self, guint pt,
   }
 
 end:
-  g_free (str_pt);
-  gst_caps_unref (local_caps);
+  if (str_pt != NULL) {
+    g_free (str_pt);
+  }
+  if (local_caps != NULL) {
+    gst_caps_unref (local_caps);
+  }
 
   return caps;
 }
