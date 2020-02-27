@@ -240,6 +240,9 @@ struct _KmsBaseRtpEndpointPrivate
   guint min_port;
   guint max_port;
 
+  /* RTP settings */
+  guint mtu;
+
   /* RTP statistics */
   KmsBaseRTPStats stats;
 
@@ -275,6 +278,7 @@ static guint obj_signals[LAST_SIGNAL] = { 0 };
 #define MIN_VIDEO_RECV_BW_DEFAULT 0
 #define MIN_VIDEO_SEND_BW_DEFAULT 100  // kbps
 #define MAX_VIDEO_SEND_BW_DEFAULT 500  // kbps
+#define DEFAULT_MTU 1200 // Bytes
 
 enum
 {
@@ -292,6 +296,7 @@ enum
   PROP_MAX_PORT,
   PROP_SUPPORT_FEC,
   PROP_OFFER_DIR,
+  PROP_MTU,
   PROP_LAST
 };
 
@@ -1038,7 +1043,6 @@ kms_base_rtp_endpoint_create_remb_manager (KmsBaseRtpEndpoint *self,
     KmsBaseRtpSession *sess)
 {
   GstPad *pad;
-  int max_recv_bw;
 
   if (self->priv->rl != NULL) {
     /* TODO: support more than one media with REMB */
@@ -1074,6 +1078,7 @@ kms_base_rtp_endpoint_create_remb_manager (KmsBaseRtpEndpoint *self,
   g_object_set (rtpsession, "rtcp-min-interval",
       RTCP_MIN_INTERVAL * GST_MSECOND, NULL);
 
+  guint max_recv_bw;
   g_object_get (self, "max-video-recv-bandwidth", &max_recv_bw, NULL);
   self->priv->rl =
       kms_remb_local_create (rtpsession, self->priv->min_video_recv_bw,
@@ -1182,7 +1187,8 @@ kms_base_rtp_endpoint_get_caps_from_rtpmap (const gchar * media,
 }
 
 static GstElement *
-kms_base_rtp_endpoint_get_payloader_for_caps (GstCaps * caps)
+kms_base_rtp_endpoint_get_payloader_for_caps (KmsBaseRtpEndpoint * self,
+    GstCaps * caps)
 {
   GstElementFactory *factory;
   GstElement *payloader = NULL;
@@ -1231,6 +1237,11 @@ kms_base_rtp_endpoint_get_payloader_for_caps (GstCaps * caps)
     /* Set picture id so that remote peer can determine continuity if there */
     /* are lost FEC packets and if it has to NACK them */
     g_object_set (payloader, "picture-id-mode", PICTURE_ID_15_BIT, NULL);
+  }
+
+  pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (payloader), "mtu");
+  if (pspec != NULL && G_PARAM_SPEC_VALUE_TYPE (pspec) == G_TYPE_UINT) {
+    g_object_set (payloader, "mtu", self->priv->mtu, NULL);
   }
 
 end:
@@ -1456,7 +1467,7 @@ kms_base_rtp_endpoint_set_media_payloader (KmsBaseRtpEndpoint * self,
 
   GST_DEBUG_OBJECT (self, "Found caps: %" GST_PTR_FORMAT, caps);
 
-  payloader = kms_base_rtp_endpoint_get_payloader_for_caps (caps);
+  payloader = kms_base_rtp_endpoint_get_payloader_for_caps (self, caps);
   gst_caps_unref (caps);
 
   if (payloader == NULL) {
@@ -2345,9 +2356,9 @@ kms_base_rtp_endpoint_set_property (GObject * object, guint property_id,
       self->priv->target_bitrate = g_value_get_int (value);
       break;
     case PROP_MIN_VIDEO_RECV_BW:{
-      int max_recv_bw;
       guint v = g_value_get_uint (value);
 
+      guint max_recv_bw;
       g_object_get (self, "max-video-recv-bandwidth", &max_recv_bw, NULL);
 
       if (max_recv_bw != 0 && v > max_recv_bw) {
@@ -2423,6 +2434,9 @@ kms_base_rtp_endpoint_set_property (GObject * object, guint property_id,
       self->priv->max_port = v;
       break;
     }
+    case PROP_MTU:
+      self->priv->mtu = g_value_get_uint (value);
+      break;
     case PROP_OFFER_DIR:
       self->priv->offer_dir = g_value_get_enum (value);
       break;
@@ -2488,6 +2502,9 @@ kms_base_rtp_endpoint_get_property (GObject * object, guint property_id,
       break;
     case PROP_MAX_PORT:
       g_value_set_uint (value, self->priv->max_port);
+      break;
+    case PROP_MTU:
+      g_value_set_uint (value, self->priv->mtu);
       break;
     case PROP_SUPPORT_FEC:
       g_value_set_boolean (value, self->priv->support_fec);
@@ -2940,6 +2957,13 @@ kms_base_rtp_endpoint_class_init (KmsBaseRtpEndpointClass * klass)
           "Maximum port number to be used",
           "Maximum port number to be used",
           0, G_MAXUINT16, DEFAULT_MAX_PORT,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (object_class, PROP_MTU,
+      g_param_spec_uint ("mtu",
+          "RTP MTU",
+          "Maximum Transmission Unit (MTU) used for RTP",
+          0, G_MAXUINT, DEFAULT_MTU,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (object_class, PROP_SUPPORT_FEC,
@@ -3420,6 +3444,8 @@ kms_base_rtp_endpoint_init (KmsBaseRtpEndpoint * self)
 
   self->priv->min_port = DEFAULT_MIN_PORT;
   self->priv->max_port = DEFAULT_MAX_PORT;
+
+  self->priv->mtu = DEFAULT_MTU;
 
   self->priv->offer_dir = DEFAULT_OFFER_DIR;
 }
